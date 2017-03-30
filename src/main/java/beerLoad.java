@@ -26,14 +26,12 @@ public class beerLoad {
         System.exit(1);
     }
 
-    // Set your first document with a key of "hello" and a value of "couchbase!"
+    // Set a document
     client.set("hello", "couchbase!").get();
-
-    // Return the result and cast it to string
+    // Return the result and validate
     String result = (String) client.get("hello");
     System.out.println(result);
 
-    // Get a DescriptiveStatistics instance
     DescriptiveStatistics stats = new DescriptiveStatistics();
 
     View view = client.getView("beer", "allkeys");

@@ -16,7 +16,6 @@ public class beerLoad {
 
     // Add one or more nodes of your cluster (exchange the IP with yours)
     nodes.add(URI.create("http://192.168.61.101:8091/pools"));
-    nodes.add(URI.create("localhost"));
 
     // Try to connect to the client
     CouchbaseClient client = null;

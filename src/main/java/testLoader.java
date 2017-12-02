@@ -1,8 +1,4 @@
 import com.couchbase.client.CouchbaseClient;
-import com.couchbase.client.protocol.views.Query;
-import com.couchbase.client.protocol.views.View;
-import com.couchbase.client.protocol.views.ViewResponse;
-import com.couchbase.client.protocol.views.ViewRow;
 import com.oracle.javafx.jmx.json.JSONDocument;
 import net.spy.memcached.internal.OperationCompletionListener;
 import net.spy.memcached.internal.OperationFuture;
@@ -31,7 +27,7 @@ public class testLoader {
         // Try to connect to the client
         CouchbaseClient client = null;
         try {
-            client = new CouchbaseClient(nodes, "beer-sample", "");
+            client = new CouchbaseClient(nodes, "testload", "password");
         } catch (Exception e) {
             System.err.println("Error connecting to Couchbase: " + e.getMessage());
             System.exit(1);
@@ -41,24 +37,23 @@ public class testLoader {
 
         String sCurrentLine;
         JSONParser parser = new JSONParser();
-        //JSONObject jsonObj;
         String obj;
-        DescriptiveStatistics stats = new DescriptiveStatistics();
-        CountDownLatch latch = new CountDownLatch(6756);
 
         BufferedReader br1;
-        br1 = new BufferedReader(new FileReader("/Users/justin/Documents/Symantec/sampledata/stocks.json"));
+        br1 = new BufferedReader(new FileReader("/Users/justin/Documents/Demo/data/stocks.json"));
+        final DescriptiveStatistics stats = new DescriptiveStatistics();
+        final CountDownLatch latch = new CountDownLatch(6756);
 
             while ((sCurrentLine = br1.readLine()) != null) {
                 try {
                     obj = parser.parse(sCurrentLine).toString();
                     String theid = UUID.randomUUID().toString();
-                    long time1 = System.currentTimeMillis() % 1000;
+                    //DEBUG: System.out.println(theid);
+                    final long time1 = System.currentTimeMillis();
 
                     client.set(theid, obj).addListener(new OperationCompletionListener() {
-                        @Override
                         public void onComplete(OperationFuture<?> future) throws Exception {
-                            long time2 = System.currentTimeMillis() % 1000;
+                            long time2 = System.currentTimeMillis();
                             stats.addValue(time2 - time1);
                             latch.countDown();
                         }
@@ -71,7 +66,7 @@ public class testLoader {
                 }
             }
 
-        boolean success = latch.await(10, TimeUnit.SECONDS);
+        boolean success = latch.await(10, TimeUnit.MINUTES);
         if (success) {
             System.out.println("I'm done!");
             // Compute some statistics
@@ -84,26 +79,6 @@ public class testLoader {
         } else {
             System.out.println("ouch");
         }
-
-        View view = client.getView("beer", "allkeys");
-        Query query = new Query();
-        ViewResponse response = client.query(view, query);
-
-        for (ViewRow row : response) {
-            String theID = row.getId();
-            long time1 = System.currentTimeMillis() % 1000;
-            client.get(theID);
-            long time2 = System.currentTimeMillis() % 1000;
-            stats.addValue(time2 - time1);
-        }
-
-        // Compute some statistics
-        double mean = stats.getMean();
-        System.out.println("Mean Get:" + mean);
-        double std = stats.getStandardDeviation();
-        System.out.println("STD Get:" + std);
-        double median = stats.getPercentile(95);
-        System.out.println("MED Get:" + median);
 
         client.shutdown();
 
